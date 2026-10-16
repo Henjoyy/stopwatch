@@ -1,11 +1,11 @@
-# Getaway Clock
+﻿# Getaway Clock
 
 GTA 6의 바이스시티 석양 분위기를 입힌 웹 스탑워치입니다. 설치 없이 HTML 파일 하나로 동작합니다.
 
 ## 실행 방법
 
 1. 저장소를 내려받습니다.
-2. `GTA 스탑워치.html` 파일을 브라우저로 엽니다.
+2. `index.html` 파일을 브라우저로 엽니다.
 
 별도의 빌드나 서버는 필요 없습니다. 폰트(Anton, Oswald, Permanent Marker)를 Google Fonts에서 불러오므로 인터넷에 연결되어 있어야 원래 모습으로 보입니다. 오프라인에서도 동작하지만 기본 폰트로 표시됩니다.
 
