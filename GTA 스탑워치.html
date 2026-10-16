@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GETAWAY CLOCK</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;600&family=Permanent+Marker&display=swap" rel="stylesheet">
+<style>
+  :root { --pink: #ff3d9a; --orange: #ff8a3d; --yellow: #ffd23f; --teal: #2de2e6; --violet: #3a0ca3; --night: #14052e; }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; overflow: hidden; color: #fff; font-family: "Oswald", "Malgun Gothic", sans-serif;
+    background: linear-gradient(180deg, #1a0638 0%, #5a1486 28%, #d6246e 55%, #ff7a3d 78%, #ffd23f 100%);
+  }
+
+  /* ---------- 배경 장면 ---------- */
+  .scene { position: fixed; inset: 0; z-index: 0; }
+  .sun { position: absolute; left: 50%; bottom: 17vh; width: min(60vh, 70vw); aspect-ratio: 1; transform: translateX(-50%); border-radius: 50%;
+         background: linear-gradient(180deg, #ffe066 0%, #ff9f43 45%, #ff3d9a 100%); box-shadow: 0 0 120px 30px rgba(255,90,140,.55);
+         -webkit-mask: repeating-linear-gradient(180deg, #000 0 62%, transparent 62% 64%, #000 64% 74%, transparent 74% 77%, #000 77% 86%, transparent 86% 90%, #000 90% 100%); mask: linear-gradient(#000,#000); }
+  .sun::after { content: ""; position: absolute; inset: 0; border-radius: 50%;
+        background: repeating-linear-gradient(180deg, transparent 0 58%, #5a1486 58% 60%, transparent 60% 68%, #8a1a7a 68% 71%, transparent 71% 78%, #c81f6e 78% 82%, transparent 82% 100%); mix-blend-mode: multiply; opacity: .0; }
+  .skyline { position: absolute; left: 0; right: 0; bottom: 17vh; height: 22vh; }
+  /* ---------- 도로 ---------- */
+  .road { position: absolute; left: 0; right: 0; bottom: 0; height: 17vh; background: linear-gradient(180deg, #2b1148 0, #171024 10%, #0b0616 100%);
+          border-top: 3px solid var(--pink); box-shadow: 0 -4px 30px rgba(255,61,154,.6); }
+  .road::before { content: ""; position: absolute; left: 0; right: 0; top: 66%; height: 5px; background: repeating-linear-gradient(90deg, var(--yellow) 0 60px, transparent 60px 120px);
+                  background-size: 120px 100%; animation: roadmove var(--rd, .6s) linear infinite paused; opacity: .85; }
+  .road::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 5px; background: repeating-linear-gradient(90deg, #fff 0 30px, var(--pink) 30px 60px);
+                 background-size: 60px 100%; animation: curb var(--rd, .6s) linear infinite paused; opacity: .8; }
+  .poles { position: absolute; left: 0; right: 0; bottom: 100%; height: 9vh; pointer-events: none;
+           background: radial-gradient(circle at 298px 6px, rgba(255,210,63,.95) 0 3px, rgba(255,210,63,.25) 4px, transparent 14px) 0 0 / 300px 100% repeat-x,
+                       linear-gradient(90deg, transparent 0 296px, #12041f 296px 300px) 0 0 / 300px 100% repeat-x;
+           animation: poles calc(var(--rd, .6s) * 4) linear infinite paused; }
+  body.running .road::before, body.running .road::after, body.running .poles { animation-play-state: running; }
+  @keyframes roadmove { to { background-position: -120px 0; } }
+  @keyframes curb { to { background-position: -60px 0; } }
+  @keyframes poles { to { background-position: -300px 0, -300px 0; } }
+  body.fx { --rd: .16s; }
+
+  .road { --h: clamp(44px, min(10vh, 6.5vw), 96px); --w: calc(var(--h) * 2.444); }
+  .car { position: absolute; bottom: 2vh; left: var(--x); height: var(--h); aspect-ratio: 220 / 90; }
+  .car .body, .car svg { width: 100%; height: 100%; display: block; overflow: visible; }
+  .car svg { animation: bob .32s ease-in-out infinite alternate paused; }
+  body.running .car svg { animation-play-state: running; }
+  @keyframes bob { to { transform: translateY(-2px) rotate(-.4deg); } }
+  .car.player { --x: calc(100% - var(--w) - 8%); filter: drop-shadow(0 0 14px rgba(45,226,230,.55)); }
+  .car.cop { opacity: 0; transform: translateX(-60vw); transition: transform .9s cubic-bezier(.2,.8,.2,1), opacity .5s; filter: drop-shadow(0 0 10px rgba(255,255,255,.25)); }
+  .car.cop.in { opacity: 1; transform: none; }
+  .car.c1 { --x: calc(100% - var(--w) * 2.1 - 8%); } .car.c2 { --x: calc(100% - var(--w) * 3.2 - 8%); } .car.c3 { --x: calc(100% - var(--w) * 4.3 - 8%); }
+  body.chase .car.cop .body { animation: gap 2.2s ease-in-out infinite alternate; }
+  body.chase .car.c2 .body { animation-duration: 1.7s; } body.chase .car.c3 .body { animation-duration: 2.6s; }
+  @keyframes gap { to { transform: translateX(1.6vw); } }
+  .wheel { transform-box: fill-box; transform-origin: center; animation: spin .25s linear infinite paused; }
+  body.running .wheel { animation-play-state: running; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .lb-r, .lb-b { opacity: .15; }
+  body.chase .lb-r { animation: lr .36s steps(1) infinite; } body.chase .lb-b { animation: lb .36s steps(1) infinite; }
+  @keyframes lr { 0%,50% { opacity: 1; } 51%,100% { opacity: .1; } } @keyframes lb { 0%,50% { opacity: .1; } 51%,100% { opacity: 1; } }
+  .flame { opacity: 0; transform-box: fill-box; transform-origin: right center; }
+  body.fx .flame { opacity: 1; animation: flick .07s linear infinite alternate; }
+  @keyframes flick { from { transform: scaleX(.75) scaleY(.9); } to { transform: scaleX(1.15) scaleY(1.1); } }
+  body.fx .car.player .body { animation: boost 1.3s cubic-bezier(.2,.7,.2,1); }
+  body.fx .car.cop .body { animation: fall 1.6s ease-out; }
+  .car .body { transform-origin: 20% 100%; }
+  @keyframes boost { 0% { transform: none; } 25% { transform: translateX(9vw) rotate(-9deg); } 60% { transform: translateX(5vw) rotate(-2deg); } 100% { transform: none; } }
+  @keyframes fall { 0% { transform: none; } 25% { transform: translateX(-9vw); } 100% { transform: none; } }
+
+  .siren { position: absolute; inset: 0; opacity: 0; pointer-events: none; transition: opacity .4s; }
+  .siren i { position: absolute; inset: 0; }
+  .siren .r { background: radial-gradient(ellipse at 0% 100%, rgba(255,20,60,.45), transparent 60%); animation: lr .72s steps(1) infinite; }
+  .siren .b { background: radial-gradient(ellipse at 100% 100%, rgba(20,110,255,.45), transparent 60%); animation: lb .72s steps(1) infinite; }
+  body.chase .siren { opacity: 1; }
+  .palm { position: absolute; bottom: 15vh; height: 62vh; fill: #12041f; filter: drop-shadow(0 0 2px rgba(255,61,154,.6)); }
+  .palm.l { left: -2vw; } .palm.r { right: -2vw; transform: scaleX(-1); height: 54vh; }
+
+
+  /* ---------- HUD 카드 ---------- */
+  .wrap { position: relative; z-index: 2; height: 100%; display: grid; place-items: center; padding: 16px; }
+  .hud { width: 440px; max-width: 100%; text-align: center; }
+  .logo { font-family: "Permanent Marker", cursive; font-size: 1.1rem; letter-spacing: .1em; color: var(--yellow); text-shadow: 2px 2px 0 var(--pink); transform: rotate(-3deg); margin-bottom: 4px; }
+  .title { font-family: "Anton", sans-serif; font-size: 3.2rem; line-height: 1; letter-spacing: .04em; text-transform: uppercase;
+           background: linear-gradient(180deg, #fff 10%, #ffd23f 45%, #ff3d9a 90%); -webkit-background-clip: text; background-clip: text; color: transparent;
+           filter: drop-shadow(3px 3px 0 #14052e) drop-shadow(0 0 14px rgba(255,61,154,.8)); margin-bottom: 14px; }
+
+  .stars { display: flex; justify-content: center; gap: 6px; margin-bottom: 8px; }
+  .star { width: 28px; height: 28px; fill: rgba(255,255,255,.18); transition: fill .2s, filter .2s; }
+  .star.on { fill: var(--yellow); filter: drop-shadow(0 0 8px var(--orange)); animation: blink .6s steps(2) infinite; }
+  @keyframes blink { 50% { fill: var(--pink); } }
+
+  .screen { position: relative; padding: 18px 14px 14px; background: rgba(20,5,46,.78); border: 3px solid var(--yellow); border-radius: 6px;
+            box-shadow: 6px 6px 0 var(--pink), 0 0 40px rgba(255,61,154,.45); clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px)); }
+  .screen .tag { position: absolute; top: 6px; left: 12px; font-size: .62rem; letter-spacing: .3em; color: var(--teal); }
+  #time { font-family: "Anton", sans-serif; font-size: 4.4rem; letter-spacing: .03em; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 8px;
+          text-shadow: 3px 3px 0 var(--pink), 0 0 22px rgba(255,210,63,.55); }
+  #time small { font-size: 2.2rem; color: var(--yellow); }
+  .bar { height: 6px; background: rgba(255,255,255,.12); margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--teal), var(--pink), var(--yellow)); }
+
+  .controls { display: flex; gap: 10px; margin-top: 16px; }
+  button { flex: 1; font-family: "Anton", sans-serif; font-size: 1.25rem; letter-spacing: .12em; text-transform: uppercase; color: #14052e; padding: 12px 6px; cursor: pointer;
+           border: 3px solid #14052e; background: var(--yellow); box-shadow: 4px 4px 0 #14052e; transition: transform .08s, box-shadow .08s;
+           clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+  button:hover:not(:disabled) { transform: translate(-1px,-1px); box-shadow: 6px 6px 0 #14052e; }
+  button:active:not(:disabled) { transform: translate(3px,3px); box-shadow: 1px 1px 0 #14052e; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  #startBtn { background: var(--teal); flex: 1.5; }
+  #startBtn.running { background: var(--pink); color: #fff; }
+  #lapBtn { background: var(--yellow); }
+  #resetBtn { background: #fff; }
+
+  #laps { list-style: none; margin: 14px 0 0; padding: 0; max-height: 120px; overflow-y: auto; scrollbar-width: none; text-align: left; }
+  #laps::-webkit-scrollbar { display: none; }
+  #laps li { display: flex; justify-content: space-between; padding: 6px 12px; margin-bottom: 4px; background: rgba(20,5,46,.7); border-left: 4px solid var(--teal); font-size: .95rem; letter-spacing: .06em; animation: slide .25s ease-out; }
+  #laps li b { color: var(--yellow); font-weight: 600; }
+  #laps li.best { border-color: #4ade80; } #laps li.worst { border-color: var(--pink); }
+  @keyframes slide { from { transform: translateX(-30px); opacity: 0; } }
+
+  .toast { position: fixed; z-index: 5; left: 50%; top: 14vh; transform: translate(-50%, -20px); opacity: 0; pointer-events: none;
+           font-family: "Anton", sans-serif; font-size: 2.4rem; letter-spacing: .1em; color: var(--yellow); text-shadow: 3px 3px 0 var(--pink), 0 0 24px #000; }
+  .toast.show { animation: toast 1.4s ease-out; }
+  @keyframes toast { 0% { opacity: 0; transform: translate(-50%, -20px) scale(.8); } 15%,70% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, 10px); } }
+
+  .hint { margin-top: 12px; font-size: .7rem; letter-spacing: .2em; color: rgba(255,255,255,.7); text-shadow: 0 1px 4px #000; }
+  .scan { position: fixed; inset: 0; z-index: 4; pointer-events: none; background: repeating-linear-gradient(180deg, rgba(0,0,0,.08) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+</style>
+</head>
+<body>
+<div class="scene">
+  <div class="sun"></div>
+  <svg class="skyline" viewBox="0 0 1200 200" preserveAspectRatio="none" fill="#1a0638">
+    <path d="M0 200V120h40V90h30v30h30V60h40v60h30V100h50V70h30v50h40V40h36v80h30V90h40v30h50V80h30v40h40V50h40v70h30V100h50V60h34v60h40V95h30v25h50V70h40v50h30V105h50V85h30v35h40V55h38v65h30V100h40v100z"/>
+  </svg>
+  <svg class="palm l" viewBox="0 0 200 520"><path d="M92 520c4-120 2-250-14-330l16-4c18 84 20 214 14 334z"/><path d="M88 190C50 150 10 150-10 175c40-12 70-2 98 18zM88 190C60 120 20 90-5 95c40 8 66 40 93 95zM90 190C100 120 90 70 70 40c26 30 36 90 22 150zM92 190c20-70 60-100 100-100-36 14-62 44-90 104zM92 192c40-40 90-40 120-10-38-14-72-8-120 10z"/></svg>
+  <svg class="palm r" viewBox="0 0 200 520"><path d="M92 520c4-120 2-250-14-330l16-4c18 84 20 214 14 334z"/><path d="M88 190C50 150 10 150-10 175c40-12 70-2 98 18zM88 190C60 120 20 90-5 95c40 8 66 40 93 95zM90 190C100 120 90 70 70 40c26 30 36 90 22 150zM92 190c20-70 60-100 100-100-36 14-62 44-90 104zM92 192c40-40 90-40 120-10-38-14-72-8-120 10z"/></svg>
+  <div class="siren"><i class="r"></i><i class="b"></i></div>
+  <div class="road" id="road"><div class="poles"></div></div>
+</div>
+<div class="scan"></div>
+<div class="toast" id="toast">LAP PASSED</div>
+
+<div class="wrap">
+  <div class="hud">
+    <div class="logo">the big score</div>
+    <div class="title">Getaway Clock</div>
+    <div class="stars" id="stars"></div>
+    <div class="screen">
+      <div class="tag">TIME ELAPSED</div>
+      <div id="time">00:00<small>.00</small></div>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+    <div class="controls">
+      <button id="lapBtn" disabled>Lap</button>
+      <button id="startBtn">Start</button>
+      <button id="resetBtn" disabled>Reset</button>
+    </div>
+    <ul id="laps"></ul>
+    <div class="hint">SPACE START/STOP · L LAP · R RESET</div>
+  </div>
+</div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const timeEl = $('time'), bar = $('bar'), starsEl = $('stars'), toast = $('toast');
+  const startBtn = $('startBtn'), lapBtn = $('lapBtn'), resetBtn = $('resetBtn'), lapsEl = $('laps');
+
+  // WANTED 별: 10초마다 하나씩 (5성 = 50초), 이후 유지
+  const STAR = '<svg class="star" viewBox="0 0 24 24"><path d="M12 1.5l3.1 6.9 7.4.8-5.5 5 1.6 7.4L12 18l-6.6 3.6L7 14.2l-5.5-5 7.4-.8z"/></svg>';
+  starsEl.innerHTML = STAR.repeat(5);
+  const stars = [...starsEl.children];
+
+  // ---------- 차량 (직접 그린 사이드뷰 일러스트) ----------
+  const WHEELS = [52, 166].map(x => `<g class="wheel"><circle cx="${x}" cy="66" r="15" fill="#08060f"/><circle cx="${x}" cy="66" r="8" fill="#aab0c8"/><path d="M${x - 8} 66h16M${x} 58v16" stroke="#444a66" stroke-width="2.5"/></g>`).join('');
+  const BODY = 'M8 60C8 50 14 46 28 44L62 40C78 24 100 20 124 20C146 20 160 30 172 40L200 46C210 48 214 54 214 62V66H8Z';
+  const GLASS = '<path d="M72 40C84 28 100 25 118 25L120 40ZM126 25C142 26 152 34 160 40L126 40Z" fill="#1b0a33"/><path d="M80 37C90 29 102 27 112 27" stroke="#2de2e6" stroke-width="1.5" fill="none" opacity=".7"/>';
+  const LIGHTS = '<path d="M196 48l18 4v6h-14z" fill="#ffe066"/><path d="M214 54L330 30V82Z" fill="url(#beam)" opacity=".45"/><rect x="8" y="52" width="9" height="6" rx="2" fill="#ff2d55"/>';
+  const DEFS = '<defs><linearGradient id="beam" x1="0" x2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#ffe066" stop-opacity="0"/></linearGradient>' +
+    '<linearGradient id="pbody" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7ac0"/><stop offset="1" stop-color="#ff1f86"/></linearGradient>' +
+    '<linearGradient id="flameg" x1="1" x2="0"><stop offset="0" stop-color="#fff6a8"/><stop offset=".5" stop-color="#ff9f1c"/><stop offset="1" stop-color="#ff1f4b" stop-opacity="0"/></linearGradient></defs>';
+  const PLAYER_SVG = `<svg viewBox="0 0 220 90">${DEFS}
+    <g class="flame"><path d="M12 54L-52 46 -18 54 -66 58 -18 62 -46 72 12 62Z" fill="url(#flameg)"/></g>
+    <path d="${BODY}" fill="url(#pbody)"/><path d="M8 56H214" stroke="#2de2e6" stroke-width="2.5" opacity=".9"/>
+    <path d="M10 42h30v4H10zM18 42v8M32 42v8" stroke="#ff3d9a" stroke-width="3" fill="#7a0f4a"/>${GLASS}${LIGHTS}${WHEELS}</svg>`;
+  const COP_SVG = `<svg viewBox="0 0 220 90">${DEFS}
+    <path d="${BODY}" fill="#f5f6fb"/><path d="M8 54H214V62Q214 66 210 66H8Z" fill="#15131f"/>
+    <path d="M70 40L118 40V25C100 25 84 28 72 40ZM126 40V25C142 26 152 34 160 40Z" fill="#15131f"/>${GLASS}
+    <text x="82" y="51" font-family="Anton, sans-serif" font-size="9" fill="#15131f" letter-spacing="1">POLICE</text>
+    <rect x="96" y="14" width="18" height="7" rx="2" fill="#ff1744" class="lb-r"/><rect x="116" y="14" width="18" height="7" rx="2" fill="#2979ff" class="lb-b"/>
+    <ellipse cx="105" cy="12" rx="22" ry="9" fill="#ff1744" opacity=".35" class="lb-r"/><ellipse cx="125" cy="12" rx="22" ry="9" fill="#2979ff" opacity=".35" class="lb-b"/>
+    <path d="M196 48l18 4v6h-14z" fill="#fff"/><rect x="8" y="52" width="9" height="6" rx="2" fill="#ff2d55"/>${WHEELS}</svg>`;
+  const road = $('road');
+  const mk = (cls, svg) => { const d = document.createElement('div'); d.className = 'car ' + cls; d.innerHTML = `<div class="body">${svg}</div>`; road.appendChild(d); return d; };
+  const player = mk('player', PLAYER_SVG);
+  const cops = [1, 2, 3].map(i => mk('cop c' + i, COP_SVG));
+
+  // ---------- 이펙트 ----------
+  const scene = document.querySelector('.scene'), hud = document.querySelector('.hud');
+  const TOASTS = ['LAP PASSED', 'NITRO BOOST!', 'SHAKE THEM OFF!', 'SMOOTH GETAWAY', 'MISSION PASSED'];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  let fxTimer = null, copCount = -1, chasing = false;
+
+  function lapEffect() {
+    // 니트로: 차가 앞으로 튀고 경찰은 뒤로 밀림
+    document.body.classList.remove('fx'); void document.body.offsetWidth; document.body.classList.add('fx');
+    clearTimeout(fxTimer); fxTimer = setTimeout(() => document.body.classList.remove('fx'), 1500);
+    // 화면 번쩍임 + 흔들림
+    const fl = document.createElement('div');
+    fl.style.cssText = 'position:fixed;inset:0;z-index:5;pointer-events:none;background:radial-gradient(circle at 70% 85%,#fff,rgba(255,61,154,.5) 55%,transparent)';
+    document.body.appendChild(fl);
+    fl.animate([{ opacity: .85 }, { opacity: 0 }], { duration: 450, easing: 'ease-out' }).onfinish = () => fl.remove();
+    hud.animate([{ transform: 'translate(0,0)' }, { transform: 'translate(-6px,3px)' }, { transform: 'translate(5px,-3px)' }, { transform: 'translate(-3px,2px)' }, { transform: 'translate(0,0)' }], { duration: 380 });
+    // 스피드 라인
+    for (let i = 0; i < 18; i++) {
+      const l = document.createElement('div'), w = rnd(18, 45);
+      l.style.cssText = `position:absolute;left:0;top:${rnd(4, 82)}vh;width:${w}vw;height:${rnd(1, 3)}px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0));pointer-events:none`;
+      scene.appendChild(l);
+      l.animate([{ transform: 'translateX(105vw)', opacity: 0 }, { opacity: .9, offset: .2 }, { transform: `translateX(${-w}vw)`, opacity: 0 }],
+        { duration: rnd(350, 650), delay: rnd(0, 250), easing: 'ease-in' }).onfinish = () => l.remove();
+    }
+    // 컨페티/스파크
+    const r = player.getBoundingClientRect(), cx = r.left + r.width * .3, cy = r.top + r.height * .5;
+    const colors = ['#ffd23f', '#ff3d9a', '#2de2e6', '#fff', '#ff8a3d'];
+    for (let i = 0; i < 32; i++) {
+      const s = document.createElement('div'), size = rnd(5, 11);
+      s.style.cssText = `position:fixed;z-index:6;left:${cx}px;top:${cy}px;width:${size}px;height:${size * (Math.random() > .5 ? 1 : .4)}px;background:${colors[i % 5]};pointer-events:none;box-shadow:0 0 8px ${colors[i % 5]}`;
+      document.body.appendChild(s);
+      const dx = rnd(-260, 260), up = rnd(120, 340);
+      s.animate([{ transform: 'translate(0,0) rotate(0)', opacity: 1 }, { transform: `translate(${dx * .6}px,${-up}px) rotate(${rnd(-360, 360)}deg)`, opacity: 1, offset: .45 },
+        { transform: `translate(${dx}px,${rnd(40, 120)}px) rotate(${rnd(-720, 720)}deg)`, opacity: 0 }], { duration: rnd(900, 1500), easing: 'cubic-bezier(.2,.6,.4,1)' }).onfinish = () => s.remove();
+    }
+  }
+
+  // 별 개수에 따라 경찰차 수 변경 (1성: 1대, 3성: 2대, 5성: 3대)
+  function updateChase(lit, running) {
+    const want = running && lit > 0 ? (lit >= 5 ? 3 : lit >= 3 ? 2 : 1) : 0;
+    if (want !== copCount) { copCount = want; cops.forEach((c, i) => c.classList.toggle('in', i < want)); }
+    const on = want > 0;
+    if (on !== chasing) { chasing = on; document.body.classList.toggle('chase', on); }
+  }
+
+  let elapsed = 0, startTime = 0, raf = null, lastLap = 0, laps = [];
+  const p = (n) => String(n).padStart(2, '0');
+  const now = () => elapsed + performance.now() - startTime;
+
+  function render(ms) {
+    const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, s = Math.floor(ms / 1000) % 60;
+    timeEl.innerHTML = (h ? p(h) + ':' : '') + p(m) + ':' + p(s) + '<small>.' + p(Math.floor(ms / 10) % 100) + '</small>';
+    bar.style.width = ((ms % 60000) / 600) + '%';
+    const lit = Math.min(5, Math.floor(ms / 10000));
+    stars.forEach((st, i) => st.classList.toggle('on', i < lit));
+    updateChase(lit, raf !== null);
+  }
+  const full = (ms) => { const m = Math.floor(ms / 60000), s = Math.floor(ms / 1000) % 60; return p(m) + ':' + p(s) + '.' + p(Math.floor(ms / 10) % 100); };
+
+  function loop() { render(now()); raf = requestAnimationFrame(loop); }
+
+  function flash(text) { toast.textContent = text; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); }
+
+  function toggle() {
+    if (raf === null) {
+      startTime = performance.now(); raf = requestAnimationFrame(loop);
+      startBtn.textContent = 'Stop'; startBtn.classList.add('running'); document.body.classList.add('running');
+      lapBtn.disabled = false; resetBtn.disabled = false;
+    } else {
+      elapsed = now(); cancelAnimationFrame(raf); raf = null; render(elapsed);
+      startBtn.textContent = 'Resume'; startBtn.classList.remove('running'); document.body.classList.remove('running');
+      lapBtn.disabled = true;
+    }
+  }
+
+  function renderLaps() {
+    const ds = laps.map(l => l.d), min = Math.min(...ds), max = Math.max(...ds);
+    lapsEl.innerHTML = '';
+    [...laps].reverse().forEach(l => {
+      const li = document.createElement('li');
+      if (laps.length > 2) li.className = l.d === min ? 'best' : l.d === max ? 'worst' : '';
+      li.innerHTML = `<span>LAP ${p(l.i)}</span><b>+${full(l.d)}</b><span>${full(l.t)}</span>`;
+      lapsEl.appendChild(li);
+    });
+  }
+
+  function lap() {
+    const t = now(); laps.push({ i: laps.length + 1, d: t - lastLap, t }); lastLap = t;
+    renderLaps(); flash(TOASTS[Math.floor(Math.random() * TOASTS.length)]); lapEffect();
+  }
+
+  function reset() {
+    cancelAnimationFrame(raf); raf = null; elapsed = 0; lastLap = 0; laps = [];
+    render(0); lapsEl.innerHTML = '';
+    startBtn.textContent = 'Start'; startBtn.classList.remove('running'); document.body.classList.remove('running');
+    lapBtn.disabled = true; resetBtn.disabled = true;
+  }
+
+  startBtn.onclick = toggle; lapBtn.onclick = lap; resetBtn.onclick = reset;
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') { e.preventDefault(); toggle(); }
+    else if (e.key.toLowerCase() === 'l' && !lapBtn.disabled) lap();
+    else if (e.key.toLowerCase() === 'r' && !resetBtn.disabled) reset();
+  });
+  render(0);
+</script>
+</body>
+</html>
